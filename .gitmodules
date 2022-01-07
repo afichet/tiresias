@@ -1,0 +1,21 @@
+[submodule "3rdparty/glfw"]
+	path = 3rdparty/glfw
+	url = https://github.com/glfw/glfw.git
+[submodule "3rdparty/glm"]
+	path = 3rdparty/glm
+	url = https://github.com/g-truc/glm.git
+[submodule "3rdparty/ImFileDialog"]
+	path = 3rdparty/ImFileDialog
+	url = https://github.com/dfranx/ImFileDialog.git
+[submodule "3rdparty/imgui"]
+	path = 3rdparty/imgui
+	url = https://github.com/ocornut/imgui.git
+[submodule "3rdparty/lodepng"]
+	path = 3rdparty/lodepng
+	url = https://github.com/lvandeve/lodepng.git
+[submodule "3rdparty/spectral-exr"]
+	path = 3rdparty/spectral-exr
+	url = https://github.com/afichet/spectral-exr.git
+[submodule "3rdparty/stb"]
+	path = 3rdparty/stb
+	url = https://github.com/nothings/stb.git
