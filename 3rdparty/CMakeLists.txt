@@ -82,6 +82,45 @@ set(IMGUI_HEADERS
 
 
 # -----------------------------------------------------------------------------
+# Native File Dialog
+# -----------------------------------------------------------------------------
+set(NFD_SRCS
+  ${CMAKE_CURRENT_SOURCE_DIR}/nativefiledialog/src/nfd_common.c  
+)
+
+if (WIN32)
+  set(NFD_SRCS
+    ${NFD_SRCS}
+    ${CMAKE_CURRENT_SOURCE_DIR}/nativefiledialog/src/nfd_win.cpp  
+  )
+elseif (APPLE)
+  set(NFD_SRCS
+    ${NFD_SRCS}
+    ${CMAKE_CURRENT_SOURCE_DIR}/nativefiledialog/src/nfd_cocoa.m  
+  )
+elseif (CMAKE_SYSTEM MATCHES "Linux" OR CMAKE_SYSTEM_NAME MATCHES "BSD")
+  # find_package(GTK REQUIRED)
+  # find_package(PkgConfig REQUIRED)
+  # pkg_check_modules(GTK REQUIRED gtkmm-3.0)
+  # message("${GTK_INCLUDE_DIR}")
+
+  find_package(PkgConfig REQUIRED)
+  pkg_check_modules (GLIB2 REQUIRED glib-2.0)
+  pkg_check_modules(GTK REQUIRED gtk+-3.0)
+
+  set(NFD_SRCS
+    ${NFD_SRCS}
+    ${CMAKE_CURRENT_SOURCE_DIR}/nativefiledialog/src/nfd_gtk.c  
+  )
+endif()
+
+set(NFD_HEADERS
+  ${CMAKE_CURRENT_SOURCE_DIR}/nativefiledialog/src/common.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/nativefiledialog/src/nfd_common.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/nativefiledialog/src/simple_exec.h
+)
+
+# -----------------------------------------------------------------------------
 # LodePNG
 # -----------------------------------------------------------------------------
 
@@ -101,8 +140,8 @@ add_subdirectory(spectral-exr/lib)
 # Library creation
 # -----------------------------------------------------------------------------
 
-set(SOURCES ${GLEW_SRCS} ${IMGUI_SRCS} ${LODEPNG_SRCS} ImFileDialog/ImFileDialog.cpp)
-set(HEADERS ${GLEW_HEADERS} ${IMGUI_HEADERS} ${LODEPNG_HEADERS})
+set(SOURCES ${GLEW_SRCS} ${IMGUI_SRCS} ${NFD_SRCS} ${LODEPNG_SRCS} ImFileDialog/ImFileDialog.cpp)
+set(HEADERS ${GLEW_HEADERS} ${IMGUI_HEADERS} ${NFD_HEADERS} ${LODEPNG_HEADERS})
 
 add_library(3rdparty STATIC ${SOURCES})
 target_link_libraries(3rdparty PUBLIC glfw ${GLFW_DEPENDENCIES})
@@ -110,6 +149,7 @@ target_link_libraries(3rdparty PUBLIC EXRSpectralImage)
 target_include_directories(3rdparty SYSTEM PUBLIC ${CMAKE_CURRENT_LIST_DIR})
 target_include_directories(3rdparty SYSTEM PUBLIC ${CMAKE_CURRENT_LIST_DIR}/imgui)
 target_include_directories(3rdparty SYSTEM PUBLIC ${CMAKE_CURRENT_LIST_DIR}/glew/include)
+target_include_directories(3rdparty SYSTEM PUBLIC ${CMAKE_CURRENT_LIST_DIR}/nativefiledialog/src/include)
 target_include_directories(3rdparty SYSTEM PUBLIC ${CMAKE_CURRENT_LIST_DIR}/lodepng)
 target_include_directories(3rdparty SYSTEM PUBLIC ${CMAKE_CURRENT_LIST_DIR}/glm)
 target_include_directories(3rdparty SYSTEM PUBLIC ${CMAKE_CURRENT_LIST_DIR}/ImFileDialog)
@@ -120,14 +160,22 @@ target_include_directories(3rdparty SYSTEM PUBLIC ${CMAKE_CURRENT_LIST_DIR}/spec
 
 if (UNIX AND NOT APPLE)
   target_link_libraries(3rdparty PUBLIC
-      ${CMAKE_THREAD_LIBS_INIT}
-      ${X11_LIBRARIES}
-      ${CMAKE_DL_LIBS}
-      )
+    ${CMAKE_THREAD_LIBS_INIT}
+    ${X11_LIBRARIES}
+    ${CMAKE_DL_LIBS}
+    ${GLIB2_LIBRARIES}
+    ${GTK_LIBRARIES}
+  )
+
+  target_include_directories(3rdparty SYSTEM PUBLIC 
+    ${GLIB2_INCLUDE_DIRS}
+    ${GTK_INCLUDE_DIRS}
+    )
 elseif(APPLE)
   target_link_libraries(3rdparty PUBLIC
       "-framework Cocoa"
       "-framework IOKit"
       "-framework CoreVideo"
+      "-framework AppKit"
   )
 endif()

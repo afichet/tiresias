@@ -17,6 +17,7 @@
 #include "image_viewer/ImageViewerSpectralEXR.h"
 
 #include <ImFileDialog.h>
+#include <nfd.h>
 
 App::App(int argc, char *argv[])
     // : _imageViewer(new ImageViewerLDR("image_w.png"))
@@ -389,21 +390,45 @@ void App::gui()
 
     _imageViewerMutex.unlock();
 
+    // This version uses the DearImGUI backend
+    // if (_requestOpen) {
+    //     ifd::FileDialog::Instance().Open("ImageOpenDialog", "Open", "Image  file (*.png;*.exr){.png,.exr}");
 
-    if (_requestOpen) {
-        ifd::FileDialog::Instance().Open("ImageOpenDialog", "Open", "Image  file (*.png;*.exr){.png,.exr}");
-
-        if (ifd::FileDialog::Instance().IsDone("ImageOpenDialog")) {
-            if (ifd::FileDialog::Instance().HasResult()) {
-                const std::string res = ifd::FileDialog::Instance().GetResult().u8string();
-                open(res);
-            }
-            ifd::FileDialog::Instance().Close();
-            _requestOpen = false;
-        }
-    }
+    //     if (ifd::FileDialog::Instance().IsDone("ImageOpenDialog")) {
+    //         if (ifd::FileDialog::Instance().HasResult()) {
+    //             const std::string res = ifd::FileDialog::Instance().GetResult().u8string();
+    //             open(res);
+    //         }
+    //         ifd::FileDialog::Instance().Close();
+    //         _requestOpen = false;
+    //     }
+    // }
 
     ImGui::End();
+
+
+    if (_requestOpen) {
+        nfdchar_t *outPath = NULL;
+        nfdresult_t result = NFD_OpenDialog( NULL, NULL, &outPath );
+        std::string res;
+
+        switch (result) {
+            case NFD_OKAY:
+                res = outPath;
+                open(res);
+                break;
+
+            case NFD_CANCEL:
+                break;
+
+            case NFD_ERROR:
+                break;
+        }
+
+        free(outPath);
+
+        _requestOpen = false;
+    }
 }
 
 
