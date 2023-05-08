@@ -40,7 +40,7 @@ class ImageViewerSpectral: public ImageViewer
     bool _hasReflective;
 
   private:
-    Shader *_shaderProgram;
+    std::unique_ptr<Shader> _shaderProgram;
     GLuint  _fbo_imageViewerSpectral;
 
     // Spectral conversion

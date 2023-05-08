@@ -6,6 +6,8 @@
 
 #include <glm/glm.hpp>
 
+#include <memory>
+
 
 class ImageViewer
 {
@@ -107,7 +109,7 @@ class ImageViewer
     int   _xImageMouseOver, _yImageMouseOver;
 
   private:
-    Shader *_shaderProgram;
+    std::unique_ptr<Shader> _shaderProgram;
 
     // Image transformation
     GLuint _loc_zoomMatrix;

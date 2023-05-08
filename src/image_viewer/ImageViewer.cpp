@@ -42,8 +42,6 @@ ImageViewer::ImageViewer()
 
 ImageViewer::~ImageViewer()
 {
-    delete _shaderProgram;
-
     glDeleteBuffers(1, &_ebo);
     glDeleteBuffers(1, &_vbo);
     glDeleteVertexArrays(1, &_vao);
@@ -195,7 +193,7 @@ void ImageViewer::initGL()
     // Shader management
     // ------------------------------------------------------------------------
 
-    _shaderProgram = new Shader("glsl/vertex.vert", "glsl/fragment.frag");
+    _shaderProgram = std::unique_ptr<Shader>(new Shader("glsl/vertex.vert", "glsl/fragment.frag"));
 
     const GLuint shaderId = _shaderProgram->get();
 

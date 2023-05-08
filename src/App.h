@@ -7,6 +7,7 @@
 #include <imgui_internal.h>
 
 #include <mutex>
+#include <memory>
 
 class App
 {
@@ -40,20 +41,15 @@ class App
     static void glfw_key_cb(GLFWwindow *window, int key, int scancode, int action, int mods);
     static void glfw_window_size_cb(GLFWwindow *window, int width, int height);
 
-    GLFWwindow *_window;
-    GLFWcursor *_cursorHand;
+    GLFWwindow* _window;
+    GLFWcursor* _cursorHand;
 
-    ImageViewer *_imageViewer;
+    std::shared_ptr<ImageViewer> _imageViewer;
     std::mutex   _imageViewerMutex;
 
     bool _leftMouseButtonPressed;
-
-
     int _width, _height;
-
     bool _requestOpen;
-
-
 
     ImGuiID _dockSpaceID = 0;
 };

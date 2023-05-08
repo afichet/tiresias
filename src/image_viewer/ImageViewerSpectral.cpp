@@ -58,7 +58,7 @@ void ImageViewerSpectral::initGL()
     // Shader management
     // ------------------------------------------------------------------------
 
-    _shaderProgram = new Shader("glsl/notransform.vert", "glsl/spectral.frag");
+    _shaderProgram = std::unique_ptr<Shader>(new Shader("glsl/notransform.vert", "glsl/spectral.frag"));
 
     GLuint shaderId    = _shaderProgram->get();
     _loc_spectralImage = glGetUniformLocation(shaderId, "spectralImage");

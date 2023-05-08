@@ -21,7 +21,7 @@
 
 App::App(int argc, char *argv[])
     // : _imageViewer(new ImageViewerLDR("image_w.png"))
-    : _imageViewer(new ImageViewerSpectralEXR("MatProbe.exr"))
+    : _imageViewer(nullptr)
     , _leftMouseButtonPressed(false)
     , _requestOpen(false)
 {
@@ -88,8 +88,6 @@ App::App(int argc, char *argv[])
     // Setup Platform/Renderer backends
     ImGui_ImplGlfw_InitForOpenGL(_window, true);
     ImGui_ImplOpenGL3_Init(glsl_version);
-
-
 
     // ImFileDialog requires you to set the CreateTexture and DeleteTexture
     ifd::FileDialog::Instance().CreateTexture = [](uint8_t *data, int w, int h, char fmt) -> void * {
@@ -165,18 +163,14 @@ void App::exec()
 void App::open(const std::string &path)
 {
     _imageViewerMutex.lock();
-    if (_imageViewer) {
-        delete _imageViewer;
-        _imageViewer = nullptr;
-    }
 
     std::string ext = path.substr(path.find_last_of("."));
     std::cout << "extension = " << ext << std::endl;
 
     if (ext == ".exr") {
-        _imageViewer = new ImageViewerSpectralEXR(path);
+        _imageViewer = std::shared_ptr<ImageViewerSpectralEXR>(new ImageViewerSpectralEXR(path));
     } else if (ext == ".png") {
-        _imageViewer = new ImageViewerLDR(path);
+        _imageViewer = std::shared_ptr<ImageViewerLDR>(new ImageViewerLDR(path));
     }
 
     if (_imageViewer) {
