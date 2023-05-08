@@ -8,7 +8,7 @@
 
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
-#include <imgui/imgui_demo.cpp>
+// #include <imgui/imgui_demo.cpp>
 
 #include <imgui/backends/imgui_impl_glfw.h>
 #include <imgui/backends/imgui_impl_opengl3.h>
@@ -16,14 +16,15 @@
 #include "image_viewer/ImageViewerLDR.h"
 #include "image_viewer/ImageViewerSpectralEXR.h"
 
-#include <ImFileDialog.h>
 #include <nfd.h>
+
 
 App::App(int argc, char *argv[])
     // : _imageViewer(new ImageViewerLDR("image_w.png"))
     : _imageViewer(nullptr)
     , _leftMouseButtonPressed(false)
     , _requestOpen(false)
+    , _layoutInitialized(false)
 {
     // ------------------------------------------------------------------------
     // GLFW initialization
@@ -35,7 +36,6 @@ App::App(int argc, char *argv[])
 
     glfwSetErrorCallback(glfw_error_cb);
 
-    const char *glsl_version = "#version 330";
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -73,15 +73,43 @@ App::App(int argc, char *argv[])
     // ImGui initialization
     // ------------------------------------------------------------------------
 
+    const char *glsl_version = "#version 330";
+
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
-    ImGuiIO &io = ImGui::GetIO();
-    (void)io;
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+
+    // // Default GUI font
+    // io.Fonts->AddFontFromFileTTF(
+    //     "assets/OpenSans-Regular.ttf",
+    //     20,
+    //     NULL,
+    //     io.Fonts->GetGlyphRangesGreek()
+    // );
+
+    // // Icons font
+    // ImFontConfig config;
+    // config.MergeMode = true;
+    // config.GlyphMinAdvanceX = 13.0f; // Use if you want to make the icon monospaced
+
+    // static const ImWchar icon_ranges[] = { (ImWchar)ICON_MIN_MD, (ImWchar)ICON_MAX_MD, 0 };
+
+    // io.Fonts->AddFontFromFileTTF(
+    //     "assets/" FONT_ICON_FILE_NAME_MD,
+    //     14,
+    //     &config, icon_ranges
+    // );
+
+    // // Monospaced font
+    // _font_mono = io.Fonts->AddFontFromFileTTF(
+    //     "assets/Hack-Regular.ttf",
+    //     20, NULL, NULL
+    // );
+
     ImGui::StyleColorsDark();
 
-
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-    // io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+    // // io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
     io.FontAllowUserScaling              = true;
     io.ConfigWindowsMoveFromTitleBarOnly = true;
 
@@ -89,26 +117,10 @@ App::App(int argc, char *argv[])
     ImGui_ImplGlfw_InitForOpenGL(_window, true);
     ImGui_ImplOpenGL3_Init(glsl_version);
 
-    // ImFileDialog requires you to set the CreateTexture and DeleteTexture
-    ifd::FileDialog::Instance().CreateTexture = [](uint8_t *data, int w, int h, char fmt) -> void * {
-        GLuint tex;
-
-        glGenTextures(1, &tex);
-        glBindTexture(GL_TEXTURE_2D, tex);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, (fmt == 0) ? GL_BGRA : GL_RGBA, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, 0);
-
-        return (void *)tex;
-    };
-    ifd::FileDialog::Instance().DeleteTexture = [](void *tex) {
-        GLuint texID = (GLuint)((uintptr_t)tex);
-        glDeleteTextures(1, &texID);
-    };
+    // Check if an image was provided as an argument
+    if (argc > 1) {
+        open(argv[1]);
+    }
 }
 
 
@@ -126,19 +138,16 @@ App::~App()
 
 void App::exec()
 {
-    bool _demo = true;
     while (!glfwWindowShouldClose(_window)) {
         glfwPollEvents();
 
-        glViewport(0, 0, _width, _height);
+        // glViewport(0, 0, _width, _height);
         glClear(GL_COLOR_BUFFER_BIT);
 
         // Start the Dear ImGui frame
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-
-        // ImGui::ShowDemoWindow(&_demo);
 
         gui();
 
@@ -167,13 +176,24 @@ void App::open(const std::string &path)
     std::string ext = path.substr(path.find_last_of("."));
     std::cout << "extension = " << ext << std::endl;
 
-    if (ext == ".exr") {
-        _imageViewer = std::shared_ptr<ImageViewerSpectralEXR>(new ImageViewerSpectralEXR(path));
-    } else if (ext == ".png") {
-        _imageViewer = std::shared_ptr<ImageViewerLDR>(new ImageViewerLDR(path));
-    }
+    std::shared_ptr<ImageViewer> new_image;
 
-    if (_imageViewer) {
+    // TODO: cleaner exception handling and support for RGB EXRs
+    if (ext == ".exr" || ext == ".EXR") {
+        try {
+            new_image = std::shared_ptr<ImageViewerSpectralEXR>(new ImageViewerSpectralEXR(path));
+        } catch (const SEXR::SpectralImage::Errors& e) {
+            std::cout << "Error while opening \"" << path << "\": It is not a spectral image" << std::endl;
+            new_image = nullptr;
+        }
+    } else if (ext == ".png" || ext == ".PNG") {
+        new_image = std::shared_ptr<ImageViewerLDR>(new ImageViewerLDR(path));
+    } else {
+        std::cout << "Unsupported image type" << std::endl;
+    }
+        
+    if (new_image) {
+        _imageViewer = new_image;
         _imageViewer->initGL();
     }
 
@@ -201,6 +221,25 @@ void App::initGL()
         _imageViewer->initGL();
     }
     _imageViewerMutex.unlock();
+}
+
+
+void App::initializeLayout()
+{
+    ImGuiID dockspace_id = ImGui::GetID("MyDockspace");
+
+    const ImGuiViewport* viewport = ImGui::GetMainViewport();
+
+    ImGui::DockBuilderRemoveNode(dockspace_id); // Clear out existing layout
+    ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace); // Add empty node
+    ImGui::DockBuilderSetNodeSize(dockspace_id, viewport->Size);
+
+    _dock_mainCentralId = dockspace_id; // This variable will track the document node, however we are not using it here as we aren't docking anything into it.
+    _dock_leftId = ImGui::DockBuilderSplitNode(_dock_mainCentralId, ImGuiDir_Left, 0.2f, NULL, &_dock_mainCentralId);
+
+    ImGui::DockBuilderFinish(dockspace_id);
+
+    _layoutInitialized = true;
 }
 
 
@@ -238,107 +277,42 @@ void App::menuBar()
 
 void App::gui()
 {
+    // -------------------------------------------------------------------------
+    // Window containing the dock layout
+    // -------------------------------------------------------------------------
+
+    ImGuiWindowFlags flags = ImGuiWindowFlags_MenuBar;
+    flags |= ImGuiWindowFlags_NoDocking;
+    ImGuiViewport* viewport = ImGui::GetMainViewport();
+    ImGui::SetNextWindowPos(viewport->Pos);
+    ImGui::SetNextWindowSize(viewport->Size);
+    ImGui::SetNextWindowViewport(viewport->ID);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+    flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+    flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+    ImGui::Begin("DockSpace", 0, flags);
+    ImGui::PopStyleVar();
+
     menuBar();
 
+    ImGuiIO& io = ImGui::GetIO();
+    ImGuiID dockspace_id = ImGui::GetID("MyDockspace");
+    ImGui::DockSpace(dockspace_id);
 
-    // ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
-
-
-    // const auto viewport = ImGui::GetMainViewport();
-
-    // // m_LastSize = viewport->Size;
-
-    // ImGui::SetNextWindowPos(viewport->WorkPos);
-    // ImGui::SetNextWindowSize(viewport->WorkSize);
-    // ImGui::SetNextWindowViewport(viewport->ID);
-
-    // auto host_window_flags = 0;
-    // host_window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDocking;
-    // host_window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
-    // host_window_flags |= ImGuiWindowFlags_NoBackground;
-
-    // char label[100 + 1];
-    // ImFormatString(label, 100, "DockSpaceViewport_%08X", viewport->ID);
-
-    // ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-    // ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-    // ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-    // const auto res = ImGui::Begin(label, nullptr, host_window_flags);
-    // ImGui::PopStyleVar(3);
-
-    // _dockSpaceID = ImGui::GetID("MyDockSpace");
-    // if (ImGui::DockSpace(_dockSpaceID, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_PassthruCentralNode)) {
-    //     ImGui::End();
-    // }
-
-
-    // ImGui::DockBuilderAddNode(_dockSpaceID, ImGuiDockNodeFlags_DockSpace);
-
-    // float leftPaneDefaultWidth = 300;
-
-    // auto dockMainID = _dockSpaceID; // This variable will track the document node, however we are not using it here as we aren't docking anything into it.
-    // const auto dockLeftID = ImGui::DockBuilderSplitNode(dockMainID, ImGuiDir_Left, leftPaneDefaultWidth, nullptr, &dockMainID);
-
-    // ImGui::DockBuilderDockWindow("Debug", dockMainID);
-
-    bool p_open = true;
-
-    static bool               opt_fullscreen  = true;
-    static bool               opt_padding     = false;
-    static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
-
-    // We are using the ImGuiWindowFlags_NoDocking flag to make the parent window not dockable into,
-    // because it would be confusing to have two docking targets within each others.
-    ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDocking;
-    if (opt_fullscreen) {
-        const ImGuiViewport *viewport = ImGui::GetMainViewport();
-        ImGui::SetNextWindowPos(viewport->WorkPos);
-        ImGui::SetNextWindowSize(viewport->WorkSize);
-        ImGui::SetNextWindowViewport(viewport->ID);
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-        window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
-        window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
-    } else {
-        dockspace_flags &= ~ImGuiDockNodeFlags_PassthruCentralNode;
-    }
-
-    // When using ImGuiDockNodeFlags_PassthruCentralNode, DockSpace() will render our background
-    // and handle the pass-thru hole, so we ask Begin() to not render a background.
-    if (dockspace_flags & ImGuiDockNodeFlags_PassthruCentralNode)
-        window_flags |= ImGuiWindowFlags_NoBackground;
-
-    // Important: note that we proceed even if Begin() returns false (aka window is collapsed).
-    // This is because we want to keep our DockSpace() active. If a DockSpace() is inactive,
-    // all active windows docked into it will lose their parent and become undocked.
-    // We cannot preserve the docking relationship between an active window and an inactive docking, otherwise
-    // any change of dockspace/settings would lead to windows being stuck in limbo and never being visible.
-    if (!opt_padding)
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-    ImGui::Begin("DockSpace Demo", &p_open, window_flags);
-    if (!opt_padding)
-        ImGui::PopStyleVar();
-
-    if (opt_fullscreen)
-        ImGui::PopStyleVar(2);
-
-    // Submit the DockSpace
-    ImGuiIO &io = ImGui::GetIO();
-    if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable) {
-        ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
-        ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
+    if (!_layoutInitialized) {
+        initializeLayout();
     }
 
     _imageViewerMutex.lock();
 
     if (_imageViewer) {
-        ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_FirstUseEver);
-        ImGui::SetNextWindowSize(ImVec2(300, 0.f), ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowDockID(_dock_leftId, ImGuiCond_Once);
+        ImGui::Begin("Tools");
         _imageViewer->gui();
+        ImGui::End();
 
-
-        ImGui::SetNextWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
-        ImGui::SetNextWindowPos(ImVec2(300, 0), ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowDockID(_dock_mainCentralId, ImGuiCond_Once);
         ImGui::Begin("Image");
         ImVec2 size = ImGui::GetContentRegionAvail();
         _imageViewer->resizeWindow(size.x, size.y);
@@ -360,20 +334,6 @@ void App::gui()
                 _leftMouseButtonPressed = true;
             }
 
-            // Handling mouse move form GLFW:
-            // we want to be able to click within the window and move even when
-            // the cursor gets out of the boudaries of the frame.
-            // This is the same behavior than this but taking into account mouse movement out
-            // of the window.
-            // if (_leftMouseButtonPressed) {
-            //     _imageViewer->mouseLeftDrag(io.MousePos.x, io.MousePos.y);
-            // }
-
-            // if (io.MouseReleased[0]) {
-            //     _leftMouseButtonPressed = false;
-            //     _imageViewer->mouseLeftRelease(io.MousePos.x, io.MousePos.y);
-            // }
-
             // Process scroll events
             if (io.MouseWheel != 0.0f) {
                 _imageViewer->mouseScroll(0., io.MouseWheel);
@@ -384,22 +344,12 @@ void App::gui()
 
     _imageViewerMutex.unlock();
 
-    // This version uses the DearImGUI backend
-    // if (_requestOpen) {
-    //     ifd::FileDialog::Instance().Open("ImageOpenDialog", "Open", "Image  file (*.png;*.exr){.png,.exr}");
-
-    //     if (ifd::FileDialog::Instance().IsDone("ImageOpenDialog")) {
-    //         if (ifd::FileDialog::Instance().HasResult()) {
-    //             const std::string res = ifd::FileDialog::Instance().GetResult().u8string();
-    //             open(res);
-    //         }
-    //         ifd::FileDialog::Instance().Close();
-    //         _requestOpen = false;
-    //     }
-    // }
+    // -------------------------------------------------------------------------
+    // Finish
+    // -------------------------------------------------------------------------
 
     ImGui::End();
-
+    ImGui::PopStyleVar();
 
     if (_requestOpen) {
         nfdchar_t *outPath = NULL;

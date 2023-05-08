@@ -140,7 +140,7 @@ add_subdirectory(spectral-exr/lib)
 # Library creation
 # -----------------------------------------------------------------------------
 
-set(SOURCES ${GLEW_SRCS} ${IMGUI_SRCS} ${NFD_SRCS} ${LODEPNG_SRCS} ImFileDialog/ImFileDialog.cpp)
+set(SOURCES ${GLEW_SRCS} ${IMGUI_SRCS} ${NFD_SRCS} ${LODEPNG_SRCS})
 set(HEADERS ${GLEW_HEADERS} ${IMGUI_HEADERS} ${NFD_HEADERS} ${LODEPNG_HEADERS})
 
 add_library(3rdparty STATIC ${SOURCES})
@@ -152,7 +152,7 @@ target_include_directories(3rdparty SYSTEM PUBLIC ${CMAKE_CURRENT_LIST_DIR}/glew
 target_include_directories(3rdparty SYSTEM PUBLIC ${CMAKE_CURRENT_LIST_DIR}/nativefiledialog/src/include)
 target_include_directories(3rdparty SYSTEM PUBLIC ${CMAKE_CURRENT_LIST_DIR}/lodepng)
 target_include_directories(3rdparty SYSTEM PUBLIC ${CMAKE_CURRENT_LIST_DIR}/glm)
-target_include_directories(3rdparty SYSTEM PUBLIC ${CMAKE_CURRENT_LIST_DIR}/ImFileDialog)
+# target_include_directories(3rdparty SYSTEM PUBLIC ${CMAKE_CURRENT_LIST_DIR}/ImFileDialog)
 target_include_directories(3rdparty SYSTEM PUBLIC ${CMAKE_CURRENT_LIST_DIR}/stb)
 
 # TODO: Temporary: for "spectrum_data.h"

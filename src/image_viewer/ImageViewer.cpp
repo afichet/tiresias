@@ -58,44 +58,20 @@ ImageViewer::~ImageViewer()
 
 void ImageViewer::gui()
 {
-    ImVec2 pos        = ImGui::GetWindowPos();
-    ImVec2 windowSize = ImVec2(0., 0.);
-
+    // TODO: change to independent class & windows
     if (_showViewControl) {
-        ImGui::Begin("View", &_showViewControl);
+        ImGui::SeparatorText("View");
         gui_viewControl();
-        windowSize = ImGui::GetWindowSize();
-        ImGui::End();
-
-        // Set Next window position and size
-        pos.y += windowSize.y;
-        ImGui::SetNextWindowPos(ImVec2(0, pos.y), ImGuiCond_FirstUseEver);
-        ImGui::SetNextWindowSize(ImVec2(windowSize.x, 0.), ImGuiCond_FirstUseEver);
     }
 
     if (_showColorControl) {
-        ImGui::Begin("Colors", &_showColorControl);
+        ImGui::SeparatorText("Colors");
         gui_colorControl();
-        windowSize = ImGui::GetWindowSize();
-        ImGui::End();
-
-        // Set Next window position and size
-        pos.y += windowSize.y;
-        ImGui::SetNextWindowPos(ImVec2(0, pos.y), ImGuiCond_FirstUseEver);
-        ImGui::SetNextWindowSize(ImVec2(windowSize.x, 0.), ImGuiCond_FirstUseEver);
     }
 
-    // FIXME: position is not set in subclasses
     if (_showInspector) {
-        ImGui::Begin("Inspector", &_showInspector);
+        ImGui::SeparatorText("Inspector");
         gui_inspectorTool();
-        windowSize = ImGui::GetWindowSize();
-        ImGui::End();
-
-        // Set Next window position and size
-        pos.y += windowSize.y;
-        ImGui::SetNextWindowPos(ImVec2(0, pos.y), ImGuiCond_FirstUseEver);
-        ImGui::SetNextWindowSize(ImVec2(windowSize.x, 0.), ImGuiCond_FirstUseEver);
     }
 }
 
@@ -141,7 +117,6 @@ void ImageViewer::gui_viewControl()
     if (ImGui::Button("Fit view")) {
         setFitView();
     }
-    ImGui::Separator();
 }
 
 

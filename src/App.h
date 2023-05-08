@@ -23,6 +23,7 @@ class App
   protected:
     virtual void initGL();
 
+    virtual void initializeLayout();
     virtual void menuBar();
     virtual void gui();
 
@@ -50,6 +51,10 @@ class App
     bool _leftMouseButtonPressed;
     int _width, _height;
     bool _requestOpen;
+    bool _layoutInitialized;
+
+    ImGuiID _dock_mainCentralId;
+    ImGuiID _dock_leftId;
 
     ImGuiID _dockSpaceID = 0;
 };
