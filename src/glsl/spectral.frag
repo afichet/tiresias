@@ -24,6 +24,7 @@ uniform sampler1D imageWlBoundsWidths;
 uniform int width;
 uniform int height;
 uniform uint nSpectralBands;
+uniform bool isReflective;
 
 void main()
 {
@@ -40,21 +41,38 @@ void main()
     
     vec3 pxColor = vec3(0);
 
-    for (int i = 0; i < int(nSpectralBands); i++) {
-        float wl_curr  = texelFetch(imageWavelengths, i, 0).r;
-        float wl_width = texelFetch(imageWlBoundsWidths, i, 0).r;
-        
-        float idx_img = float(i)/float(nSpectralBands-uint(1));
-        // float radiance = texelFetch(spectralImage, ivec3(i, pxCoords), 0).r; 
-        float radiance = texture(spectralImage, vec3(idx_img, uv)).r;
+    if (!isReflective) {
+        for (int i = 0; i < int(nSpectralBands); i++) {
+            float wl_curr  = texelFetch(imageWavelengths, i, 0).r;
+            float wl_width = texelFetch(imageWlBoundsWidths, i, 0).r;
+            
+            float idx_img = float(i)/float(nSpectralBands-uint(1));
+            // float radiance = texelFetch(spectralImage, ivec3(i, pxCoords), 0).r; 
+            float radiance = texture(spectralImage, vec3(idx_img, uv)).r;
 
-        float idx_cmf = (wl_curr - float(cmfFirstWavelength)) / float(cmfSize - uint(1));
+            float idx_cmf = (wl_curr - float(cmfFirstWavelength)) / float(cmfSize - uint(1));
 
-        vec3 cmfValue = texture(cmfXYZ, idx_cmf).xyz;
+            vec3 cmfValue = texture(cmfXYZ, idx_cmf).xyz;
 
-        pxColor += radiance * cmfValue * wl_width;
+            pxColor += radiance * cmfValue * wl_width;
+        }
+    } else {
+        for (int i = 0; i < int(nSpectralBands); i++) {
+            float wl_curr  = texelFetch(imageWavelengths, i, 0).r;
+            float wl_width = texelFetch(imageWlBoundsWidths, i, 0).r;
+            
+            float idx_img = float(i)/float(nSpectralBands-uint(1));
+            float radiance = texture(spectralImage, vec3(idx_img, uv)).r;
+
+            float idx_cmf = (wl_curr - float(cmfFirstWavelength)) / float(cmfSize - uint(1));
+            float idx_illu = (wl_curr - float(illuminantFirstWavelength)) / float(illuminantSize - uint(1));
+
+            vec3 cmfValue = texture(cmfXYZ, idx_cmf).xyz;
+            float illuValue = texture(illuminant, idx_illu).r;
+
+            pxColor += radiance * illuValue * cmfValue * wl_width;
+        }
     }
-
 
 
     outColor.rgb = xyzToRgb * pxColor;

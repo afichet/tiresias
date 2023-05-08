@@ -34,7 +34,6 @@ class ImageViewerSpectral: public ImageViewer
     // WARN: Subject to change
     std::vector<float> _imageWlBoundsWidths;
 
-
     bool _isPolarised;
     bool _hasEmissive;
     bool _hasReflective;
@@ -48,6 +47,7 @@ class ImageViewerSpectral: public ImageViewer
     GLuint _tex_cmfXYZ;
     GLuint _tex_imageWavelengths;
     GLuint _tex_imageWlBoundsWidths;
+    GLuint _tex_illuminant;
 
     // Shader locations
     GLuint _loc_spectralImage;
@@ -55,16 +55,23 @@ class ImageViewerSpectral: public ImageViewer
     GLuint _loc_imageWavelengths;
     GLuint _loc_imageWlBoundsWidths;
 
-    GLuint _loc_width, _loc_height, _loc_nSpectralBands;
+    GLuint _loc_width, _loc_height, _loc_nSpectralBands, _loc_isReflective;
 
     GLuint _loc_cmfXYZ;
     GLuint _loc_cmfFirstWavelength;
     GLuint _loc_cmfSize;
 
+    GLuint _loc_illuminant;
+    GLuint _loc_illuminantFirstWavelength;
+    GLuint _loc_illuminantSize;
+
     GLuint _loc_xyzToRgb;
 
     unsigned int _cmfFirstWavelength;
     size_t       _cmfSize;
+
+    unsigned int _illuminantFirstWavelength;
+    size_t       _illuminantSize;
 
     glm::mat3 _xyzToRgb;
 

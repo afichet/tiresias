@@ -69,11 +69,15 @@ void ImageViewerSpectral::initGL()
     _loc_width          = glGetUniformLocation(shaderId, "width");
     _loc_height         = glGetUniformLocation(shaderId, "height");
     _loc_nSpectralBands = glGetUniformLocation(shaderId, "nSpectralBands");
+    _loc_isReflective   = glGetUniformLocation(shaderId, "isReflective");
 
-    _loc_cmfXYZ = glGetUniformLocation(shaderId, "cmfXYZ");
-
+    _loc_cmfXYZ             = glGetUniformLocation(shaderId, "cmfXYZ");
     _loc_cmfFirstWavelength = glGetUniformLocation(shaderId, "cmfFirstWavelength");
     _loc_cmfSize            = glGetUniformLocation(shaderId, "cmfSize");
+
+    _loc_illuminant                 = glGetUniformLocation(shaderId, "illuminant");
+    _loc_illuminantFirstWavelength  = glGetUniformLocation(shaderId, "illuminantFirstWavelength");
+    _loc_illuminantSize             = glGetUniformLocation(shaderId, "illuminantSize");
 
     _loc_xyzToRgb = glGetUniformLocation(shaderId, "xyzToRgb");
 
@@ -148,6 +152,32 @@ void ImageViewerSpectral::initGL()
     glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
+    glBindTexture(GL_TEXTURE_1D, 0);
+
+    // Illuminant
+    _illuminantSize = sizeof(SEXR::D_65_SPD) / sizeof(SEXR::D_65_SPD[0]);
+    _illuminantFirstWavelength = (unsigned int)SEXR::D_65_FIRST_WAVELENGTH_NM;
+
+    std::vector<float> illuminantValues(_illuminantSize);
+    for (size_t i = 0; i < _illuminantSize; i++) {
+        illuminantValues[i] = SEXR::D_65_SPD[i];
+    }
+
+    glGenTextures(1, &_tex_illuminant);
+    glBindTexture(GL_TEXTURE_1D, _tex_illuminant);
+    glTexImage1D(
+        GL_TEXTURE_1D,
+        0,
+        GL_R32F,
+        _illuminantSize,
+        0,
+        GL_RED,
+        GL_FLOAT,
+        illuminantValues.data());
+
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     glBindTexture(GL_TEXTURE_1D, 0);
 
@@ -198,6 +228,9 @@ void ImageViewerSpectral::render()
         glActiveTexture(GL_TEXTURE3);
         glBindTexture(GL_TEXTURE_1D, _tex_cmfXYZ);
 
+        glActiveTexture(GL_TEXTURE4);
+        glBindTexture(GL_TEXTURE_1D, _tex_illuminant);
+
         glUseProgram(_shaderProgram->get());
 
         // Set texture units
@@ -205,6 +238,7 @@ void ImageViewerSpectral::render()
         glUniform1i(_loc_imageWavelengths, 1);
         glUniform1i(_loc_imageWlBoundsWidths, 2);
         glUniform1i(_loc_cmfXYZ, 3);
+        glUniform1i(_loc_illuminant, 4);
 
         // Other parameters
         glUniform1ui(_loc_cmfFirstWavelength, _cmfFirstWavelength);
@@ -215,6 +249,7 @@ void ImageViewerSpectral::render()
         glUniform1i(_loc_width, imageWidth());
         glUniform1i(_loc_height, imageHeight());
         glUniform1ui(_loc_nSpectralBands, _nSpectralBands);
+        glUniform1i(_loc_isReflective, _hasReflective ? 1 : 0);
 
         glBindVertexArray(_vao);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
