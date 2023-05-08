@@ -244,6 +244,9 @@ void ImageViewerSpectral::render()
         glUniform1ui(_loc_cmfFirstWavelength, _cmfFirstWavelength);
         glUniform1ui(_loc_cmfSize, _cmfSize);
 
+        glUniform1ui(_loc_illuminantFirstWavelength, _illuminantFirstWavelength);
+        glUniform1ui(_loc_illuminantSize, _illuminantSize);
+
         glUniformMatrix3fv(_loc_xyzToRgb, 1, GL_FALSE, glm::value_ptr(_xyzToRgb));
 
         glUniform1i(_loc_width, imageWidth());
