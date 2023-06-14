@@ -9,3 +9,11 @@ There is plenty of known issue, e.g., incorrect scaling factor (100% zoom is not
 It partially supports OpenEXR spectral images. It does not support OpenEXR RGB, Y, YCbCr images.
 
 Use it at your own risk.
+
+Checking out the repository
+===========================
+
+```
+git clone git@github.com:yama-chan/openexr-converter.git
+git submodule update --init --recursive
+```

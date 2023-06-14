@@ -7,6 +7,24 @@ endif()
 
 
 # -----------------------------------------------------------------------------
+# Check all submodule are present
+# -----------------------------------------------------------------------------
+
+if (   NOT EXISTS "${CMAKE_CURRENT_LIST_DIR}/ImFileDialog/ImFileDialog.h"
+    OR NOT EXISTS "${CMAKE_CURRENT_LIST_DIR}/glfw/CMakeLists.txt"
+    OR NOT EXISTS "${CMAKE_CURRENT_LIST_DIR}/glm/CMakeLists.txt"
+    OR NOT EXISTS "${CMAKE_CURRENT_LIST_DIR}/imgui/imgui.h"
+    OR NOT EXISTS "${CMAKE_CURRENT_LIST_DIR}/lodepng/lodepng.h"
+    OR NOT EXISTS "${CMAKE_CURRENT_LIST_DIR}/nativefiledialog/src/common.h"
+    OR NOT EXISTS "${CMAKE_CURRENT_LIST_DIR}/spectral-exr/CMakeLists.txt"
+    OR NOT EXISTS "${CMAKE_CURRENT_LIST_DIR}/stb/stb_include.h")
+    message(SEND_ERROR
+        "Submodules are missing!\n"
+        "Try running `git submodule update --init --recursive`"
+    )
+endif()
+
+# -----------------------------------------------------------------------------
 # GLEW
 # -----------------------------------------------------------------------------
 
@@ -85,18 +103,18 @@ set(IMGUI_HEADERS
 # Native File Dialog
 # -----------------------------------------------------------------------------
 set(NFD_SRCS
-  ${CMAKE_CURRENT_SOURCE_DIR}/nativefiledialog/src/nfd_common.c  
+  ${CMAKE_CURRENT_SOURCE_DIR}/nativefiledialog/src/nfd_common.c
 )
 
 if (WIN32)
   set(NFD_SRCS
     ${NFD_SRCS}
-    ${CMAKE_CURRENT_SOURCE_DIR}/nativefiledialog/src/nfd_win.cpp  
+    ${CMAKE_CURRENT_SOURCE_DIR}/nativefiledialog/src/nfd_win.cpp
   )
 elseif (APPLE)
   set(NFD_SRCS
     ${NFD_SRCS}
-    ${CMAKE_CURRENT_SOURCE_DIR}/nativefiledialog/src/nfd_cocoa.m  
+    ${CMAKE_CURRENT_SOURCE_DIR}/nativefiledialog/src/nfd_cocoa.m
   )
 elseif (CMAKE_SYSTEM MATCHES "Linux" OR CMAKE_SYSTEM_NAME MATCHES "BSD")
   # find_package(GTK REQUIRED)
@@ -110,7 +128,7 @@ elseif (CMAKE_SYSTEM MATCHES "Linux" OR CMAKE_SYSTEM_NAME MATCHES "BSD")
 
   set(NFD_SRCS
     ${NFD_SRCS}
-    ${CMAKE_CURRENT_SOURCE_DIR}/nativefiledialog/src/nfd_gtk.c  
+    ${CMAKE_CURRENT_SOURCE_DIR}/nativefiledialog/src/nfd_gtk.c
   )
 endif()
 
@@ -167,7 +185,7 @@ if (UNIX AND NOT APPLE)
     ${GTK_LIBRARIES}
   )
 
-  target_include_directories(3rdparty SYSTEM PUBLIC 
+  target_include_directories(3rdparty SYSTEM PUBLIC
     ${GLIB2_INCLUDE_DIRS}
     ${GTK_INCLUDE_DIRS}
     )
